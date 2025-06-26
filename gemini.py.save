@@ -1,0 +1,5 @@
+
+app = Flask(__name__)
+genai.configure(api_key="AIzaSyArJiyOwiV9yZMuwZh8xZAUaC3tqMFsEd4")  # Ganti ini
+
+model = genai

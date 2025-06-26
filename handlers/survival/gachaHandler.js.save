@@ -1,0 +1,62 @@
+const { loadUsers, saveUsers, addItem } = require('./utils');
+
+async function gachaHandler(msg) {
+  const contact = await msg.getContact();
+  const sender = contact.number;
+  const users = loadUsers();
+  const user = users[sender];
+
+  if (!user || !user.registered) {
+    return msg.reply('   ^}^w Kamu belum terdaftar. Gunakan perintah: !regist Nama | Umur');
+  }
+
+  const args = msg.body.trim().split(' ');
+  const jumlahGacha = parseInt(args[1]) || 1;
+
+  const costPerRoll = 50;
+  const totalCost = jumlahGacha * costPerRoll;
+
+  if (user.money < totalCost) {
+    return msg.reply(`   ^=^r Uang ${user.name} tidak cukup untuk melakukan ${jumlahGacha} gacha. Total: ${totalCost} gold`);
+  }
+
+  user.money -= totalCost;
+
+  let dapat = {
+    Potion: 0,
+    'Gold Coin': 0,
+    'Buff Scroll': 0,
+    Kazuha: 0,
+    Nothing: 0
+  };
+
+  for (let i = 0; i < jumlahGacha; i++) {
+    const chance = Math.random();
+    let reward = 'Nothing';
+
+    if (chance < 0.2) reward = 'Potion';
+    else if (chance < 0.35) reward = 'Gold Coin';
+    else if (chance < 0.55) reward = 'Buff Scroll';
+    else if (chance < 0.551) reward = 'Kazuha';
+
+    dapat[reward]++;
+
+    if (reward !== 'Nothing') {
+      addItem(user, reward, 1); // gunakan fungsi efisien
+    }
+  }
+
+  saveUsers(users);
+
+  let replyMsg = `   ^=^n^i ${user.name} melakukan ${jumlahGacha} gacha:\n`;
+  if (dapat.Potion) replyMsg += `   ^=^r Potion: ${dapat.Potion}\n`;
+  if (dapat['Gold Coin']) replyMsg += `   ^=^y Gold Coin: ${dapat['Gold Coin']}\n`;
+  if (dapat['Buff Scroll']) replyMsg += `   ^=^c Buff Scroll: ${dapat['Buff Scroll']}\n`;
+  if (dapat['Kazuha']) replyMsg += `   ^=^p Kazuha (easter egg): ${dapat['Kazuha']}\n`;
+  if (dapat.Nothing) replyMsg += `   ^=^x Tidak dapat apa-apa: ${dapat.Nothing}`;
+
+  await msg.reply(replyMsg.trim());
+}
+
+module.exports = gachaHandler;
+
