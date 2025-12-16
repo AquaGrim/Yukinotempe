@@ -1,7 +1,7 @@
 const { MessageMedia } = require("whatsapp-web.js");
 const fs = require("fs");
 const path = require("path");
-const sharp = require("sharp");
+const Jimp = require("jimp");
 const crypto = require("crypto");
 
 // 🔧 Temp folder (jika belum ada)
@@ -77,107 +77,64 @@ module.exports = async function stickerHandler(client, msg) {
 
     if (rawText.startsWith("!brat")) {
       const overlayText = rawText.slice(5).trim() || "BRAT";
-      const canvasWidth = 512,
-        canvasHeight = 512;
-      const padding = 20;
-      const bgColor = "#fefefe";
-      const fillColor = "#333";
-      const fontFamily = "Courier New, monospace";
 
-      // Pecah teks menjadi kata
-      const words = overlayText.split(/\s+/);
-      const maxWidth = canvasWidth - 2 * padding;
-      let fontSize = 100;
+      try {
+        // Buat gambar dengan Jimp (latar putih, 512x512)
+        const image = new Jimp({
+          width: 512,
+          height: 512,
+          color: 0xffffffff, // White background
+        });
 
-      // Approximate char width (monospaced)
-      const charWidth = fontSize * 0.6;
-      let lines = [];
-      let currentLine = "";
-      for (let word of words) {
-        const testLine = currentLine ? currentLine + " " + word : word;
-        const testWidth = testLine.length * charWidth;
-        if (testWidth < maxWidth) {
-          currentLine = testLine;
-        } else {
-          lines.push(currentLine);
-          currentLine = word;
-        }
-      }
-      if (currentLine) lines.push(currentLine);
+        // Gunakan font default Jimp
+        const font = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
 
-      // Resize fontSize if needed (vertically)
-      while (
-        lines.length * fontSize * 1.2 > canvasHeight - 2 * padding &&
-        fontSize > 10
-      ) {
-        fontSize -= 2;
-        let charWidth = fontSize * 0.6;
-        // Re-wrap with new font size
-        lines = [];
-        currentLine = "";
-        for (let word of words) {
-          const testLine = currentLine ? currentLine + " " + word : word;
-          const testWidth = testLine.length * charWidth;
-          if (testWidth < maxWidth) {
-            currentLine = testLine;
-          } else {
-            lines.push(currentLine);
+        // Split teks ke beberapa baris jika terlalu panjang
+        const lines = [];
+        const maxCharsPerLine = 20;
+        let currentLine = "";
+
+        for (const word of overlayText.split(" ")) {
+          if ((currentLine + " " + word).length > maxCharsPerLine) {
+            if (currentLine) lines.push(currentLine.trim());
             currentLine = word;
+          } else {
+            currentLine = currentLine ? currentLine + " " + word : word;
           }
         }
-        if (currentLine) lines.push(currentLine);
-      }
+        if (currentLine) lines.push(currentLine.trim());
 
-      const lineHeight = fontSize * 1.2;
-      const yStart = padding + fontSize;
+        // Print teks ke tengah gambar
+        const startY = Math.max(50, (512 - lines.length * 40) / 2);
 
-      let svgLines = "";
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const wordsInLine = line.trim().split(/\s+/);
-        const spaceCount = wordsInLine.length - 1;
-        const wordWidths = wordsInLine.map((w) => w.length * charWidth);
-        const totalWordsWidth = wordWidths.reduce((a, b) => a + b, 0);
-        const spaceWidth =
-          spaceCount > 0 ? (maxWidth - totalWordsWidth) / spaceCount : 0;
-
-        let x = padding;
-        for (let j = 0; j < wordsInLine.length; j++) {
-          svgLines += `<tspan x="${x.toFixed(1)}" y="${(
-            yStart +
-            i * lineHeight
-          ).toFixed(1)}">${wordsInLine[j]}</tspan>\n`;
-          x += wordWidths[j] + spaceWidth;
+        for (let i = 0; i < lines.length; i++) {
+          const y = Math.round(startY + i * 40);
+          image.print({
+            font: font,
+            x: 50,
+            y: y,
+            text: lines[i],
+            maxWidth: 412,
+          });
         }
+
+        // Konversi ke WebP buffer
+        const webpBuffer = await image.getBuffer("image/webp");
+
+        const stickerMedia = new MessageMedia(
+          "image/webp",
+          webpBuffer.toString("base64"),
+          "brat.webp"
+        );
+
+        await msg.reply(stickerMedia, null, { sendMediaAsSticker: true });
+        return true;
+      } catch (error) {
+        console.error("[BRAT] Error creating brat sticker:", error);
+        await msg.reply("❌ Gagal membuat brat stiker.");
+        return true;
       }
-
-      const svgImage = `
-    <svg width="${canvasWidth}" height="${canvasHeight}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="${bgColor}" />
-      <text font-size="${fontSize}" font-family="${fontFamily}" fill="${fillColor}">
-        ${svgLines}
-      </text>
-    </svg>
-  `;
-
-      const sharp = require("sharp");
-      const { MessageMedia } = require("whatsapp-web.js");
-
-      const stickerBufferWebp = await sharp(Buffer.from(svgImage))
-        .webp({ quality: 95 })
-        .toBuffer();
-
-      const stickerMedia = new MessageMedia(
-        "image/webp",
-        stickerBufferWebp.toString("base64"),
-        "brat.webp"
-      );
-
-      await msg.reply(stickerMedia, null, { sendMediaAsSticker: true });
-      return true;
-    }
-
-    // ============================
+    } // ============================
     // [1] Gambar ke Stiker (perintah: !sticker)
     // ============================
     if (lowerText === "!sticker") {
@@ -277,10 +234,21 @@ module.exports = async function stickerHandler(client, msg) {
         tempInput
       );
       try {
-        await sharp(tempInput)
-          .flatten({ background: { r: 255, g: 255, b: 255 } })
-          .jpeg({ quality: 90 })
-          .toFile(tempOutput);
+        // Gunakan Jimp untuk konversi
+        const image = await Jimp.read(tempInput);
+
+        // Flatten dengan white background
+        const whiteBackground = new Jimp({
+          width: image.bitmap.width,
+          height: image.bitmap.height,
+          color: 0xffffffff,
+        });
+
+        whiteBackground.composite(image, 0, 0);
+
+        // Simpan sebagai JPEG
+        await whiteBackground.write(tempOutput);
+
         console.log(
           "[CONVERT] File successfully converted to JPEG:",
           tempOutput
@@ -296,7 +264,7 @@ module.exports = async function stickerHandler(client, msg) {
         });
         console.log("[CONVERT] Converted image sent.");
       } catch (error) {
-        console.error("[CONVERT] Sharp conversion failed:", error);
+        console.error("[CONVERT] Jimp conversion failed:", error);
         await msg.reply("❌ Gagal mengkonversi stiker ke gambar.");
       } finally {
         cleanFiles(tempInput, tempOutput);
