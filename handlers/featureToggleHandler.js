@@ -1,9 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-const filePath = path.join(__dirname, '../disabledFeatures.json');
+const fs = require("fs");
+const path = require("path");
+const filePath = path.join(__dirname, "../disabledFeatures.json");
 
 // Inisialisasi file JSON jika belum ada
-if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, '{}');
+if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, "{}");
 
 // Baca data fitur yang dinonaktifkan
 let disabledData = JSON.parse(fs.readFileSync(filePath));
@@ -31,49 +31,43 @@ function disableFeature(groupId, feature) {
 // Hapus fitur dari daftar disable
 function enableFeature(groupId, feature) {
   if (!disabledData[groupId]) return;
-  disabledData[groupId] = disabledData[groupId].filter(f => f !== feature);
+  disabledData[groupId] = disabledData[groupId].filter((f) => f !== feature);
   save();
 }
 
 // 🔒 Daftar admin bot
-const botAdmins = ['6281292744550']; // Ganti dengan nomor kamu
+const botAdmins = ["6281292744550"]; // Ganti dengan nomor kamu
 
 // Tangani perintah !disable dan !enable
 async function handleFeatureToggle(msg, senderNumber, text) {
-  const [command, feature] = text.split(' ');
-
-  // Cek hanya untuk grup
-  if (!msg.from.endsWith('@g.us')) {
-    await msg.reply('❌ Perintah ini hanya bisa digunakan di grup.');
+  const [command, feature] = text.split(" ");
+  if (!msg.from.endsWith("@g.us")) {
+    await msg.reply("❌ Perintah ini hanya bisa digunakan di grup.");
     return;
   }
-
-  // Cek apakah pengirim admin bot
   if (!botAdmins.includes(senderNumber)) {
-    await msg.reply('❌ Kamu bukan admin bot.');
+    await msg.reply("❌ Kamu bukan admin bot.");
     return;
   }
-
   const chat = await msg.getChat();
   const groupId = chat.id._serialized;
-
   if (!feature) {
-    await msg.reply('❗ Contoh penggunaan: `!disable afk` atau `!enable afk`');
+    await msg.reply("❗ Contoh penggunaan: `!disable afk` atau `!enable afk`");
     return;
   }
-
-  if (command === '!disable') {
+  if (command === "!disable") {
     disableFeature(groupId, feature);
     await msg.reply(`🚫 Fitur *${feature}* berhasil dinonaktifkan.`);
+    return;
   }
-
-  if (command === '!enable') {
+  if (command === "!enable") {
     enableFeature(groupId, feature);
     await msg.reply(`✅ Fitur *${feature}* berhasil diaktifkan kembali.`);
+    return;
   }
 }
 
 module.exports = {
   isDisabled,
-  handleFeatureToggle
+  handleFeatureToggle,
 };

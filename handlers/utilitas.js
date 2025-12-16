@@ -4,17 +4,15 @@ const { MessageMedia } = require("whatsapp-web.js");
 
 async function utilitasHandler(client, msg) {
   const text = msg.body.trim().toLowerCase();
-
   if (text.startsWith("!cuaca")) {
-    const lokasi = text.replace("!cuaca", "").trim() || "Jakarta";
+    const lokasi = text.slice(6).trim() || "Jakarta";
     await msg.reply(
       `⛅ Prakiraan cuaca untuk ${lokasi}:\nSuhu: 28°C\nKondisi: Cerah Berawan\nKelembaban: 65%`
     );
     return true;
   }
-
   if (text.startsWith("!sholat")) {
-    const lokasi = text.replace("!sholat", "").trim() || "Jakarta";
+    const lokasi = text.slice(7).trim() || "Jakarta";
     const times = {
       Subuh: "04:30",
       Dzuhur: "12:15",
@@ -23,13 +21,11 @@ async function utilitasHandler(client, msg) {
       Isya: "19:30",
     };
     let reply = `🕌 Jadwal Sholat untuk ${lokasi}:\n`;
-    for (const [sholat, jam] of Object.entries(times)) {
+    for (const [sholat, jam] of Object.entries(times))
       reply += `${sholat}: ${jam}\n`;
-    }
     await msg.reply(reply);
     return true;
   }
-
   if (text === "!kurs") {
     const rates = {
       USD: "15,000",
@@ -38,20 +34,18 @@ async function utilitasHandler(client, msg) {
       GBP: "19,000",
     };
     let reply = "💱 Kurs Mata Uang (IDR):\n";
-    for (const [mataUang, rate] of Object.entries(rates)) {
+    for (const [mataUang, rate] of Object.entries(rates))
       reply += `1 ${mataUang} = Rp${rate}\n`;
-    }
     await msg.reply(reply);
     return true;
   }
-
   if (text.startsWith("!qr")) {
-    const isi = text.replace("!qr", "").trim();
+    const isi = text.slice(3).trim();
     if (!isi) {
       await msg.reply("❗ Masukkan teks/URL. Contoh: !qr https://...");
       return true;
     }
-
+    // Hanya load font jika perlu
     const image = new Jimp(300, 300, 0xffffffff);
     const font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
     image.print(font, 10, 10, "QR Code untuk:");
@@ -61,7 +55,6 @@ async function utilitasHandler(client, msg) {
     await msg.reply(media);
     return true;
   }
-
   return false;
 }
 
