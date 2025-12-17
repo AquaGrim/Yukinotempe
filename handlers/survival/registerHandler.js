@@ -1,18 +1,14 @@
 const { loadUsers, saveUsers } = require("./utils");
+const { extractUserNumber } = require("./userExtractor");
 
 async function registerHandler(msg) {
   try {
-    // Extract nomor user (dari pesan pribadi atau quoted message di grup)
-    let senderNumber;
+    const senderNumber = extractUserNumber(msg);
 
-    // Jika di pesan pribadi, gunakan msg.from
-    if (!msg.isGroup) {
-      senderNumber = msg.from.split("@")[0];
-    } else {
-      // Jika di grup, gunakan author/sender yang quoted
-      senderNumber = msg.author
-        ? msg.author.split("@")[0]
-        : msg.from.split("@")[0];
+    if (!senderNumber) {
+      return msg.reply(
+        "❌ Tidak bisa mendapatkan nomor user di grup. Silakan kirim pesan pribadi ke bot terlebih dahulu, baru lakukan registrasi!"
+      );
     }
 
     const users = loadUsers();

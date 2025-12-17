@@ -2,6 +2,28 @@ const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
 const moment = require("moment");
 
+// Helper function untuk extract nomor user yang benar
+function extractUserNumber(msg) {
+  const fromId = msg.from;
+
+  // Jika pesan dari grup (berakhir dengan @g.us)
+  if (fromId.endsWith("@g.us")) {
+    // Format grup: "120363422443959261-1234567890@g.us"
+    // Extract nomor user dari author jika ada
+    if (msg.author) {
+      return msg.author.split("@")[0];
+    }
+    // Fallback: extract dari fromId
+    const parts = fromId.split("-");
+    if (parts.length > 1) {
+      return parts[1].split("@")[0];
+    }
+  }
+
+  // Pesan pribadi (format: 62812345678@c.us)
+  return fromId.split("@")[0];
+}
+
 // Handlers
 const tebakKataHandler = require("./handlers/tebakKataHandler");
 const llamaHandler = require("./handlers/llamaHandler");
@@ -45,7 +67,7 @@ const dailyHandler = require("./handlers/survival/dailyHandler");
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    executablePath: '/usr/bin/chromium-browser',
+    executablePath: "/usr/bin/chromium-browser",
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   },
