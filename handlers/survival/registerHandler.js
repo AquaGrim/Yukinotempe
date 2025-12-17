@@ -1,30 +1,54 @@
 const { loadUsers, saveUsers } = require("./utils");
 
+/**
+ * Ambil nomor WA asli pengirim
+ * Grup  -> msg.author (@c.us)
+ * Private -> msg.from (@c.us)
+ * Tolak @g.us dan @lid
+ */
+function getRealUserNumber(msg) {
+  // Pesan dari grup
+  if (msg.author && msg.author.endsWith("@c.us")) {
+    return msg.author.split("@")[0];
+  }
+
+  // Pesan private
+  if (msg.from && msg.from.endsWith("@c.us")) {
+    return msg.from.split("@")[0];
+  }
+
+  return null;
+}
+
 async function registerHandler(msg) {
   try {
     console.log("[REGISTER] Command triggered");
 
-    const userId = getSenderNumber(msg);
-    console.log("[REGISTER] Sender number:", userId);
+    const userId = getRealUserNumber(msg);
+    console.log("[REGISTER] Real user number:", userId);
 
     if (!userId) {
-      return msg.reply("❌ Tidak bisa membaca nomor pengirim.");
+      return msg.reply(
+        "Registrasi gagal. Kirim perintah ini lewat chat pribadi ke bot."
+      );
     }
 
     const users = loadUsers();
     const text = msg.body;
 
+    // Sudah terdaftar
     if (users[userId]?.registered) {
       return msg.reply("Kamu sudah terdaftar.");
     }
 
+    // Validasi format
     const match = text.match(/^!regist\s+(.+)\s*\|\s*(\d{1,2})$/i);
     if (!match) {
       return msg.reply("Format salah. Contoh: !regist Neko | 21");
     }
 
     const name = match[1].trim();
-    const age = parseInt(match[2]);
+    const age = parseInt(match[2], 10);
 
     if (name.length < 3 || name.length > 20) {
       return msg.reply("Nama harus 3 sampai 20 karakter.");
@@ -34,6 +58,7 @@ async function registerHandler(msg) {
       return msg.reply("Umur harus 10 sampai 99 tahun.");
     }
 
+    // Simpan user
     users[userId] = {
       registered: true,
       name,
@@ -58,12 +83,6 @@ async function registerHandler(msg) {
     console.error("[REGISTER] Error:", err.message);
     return msg.reply("Terjadi kesalahan saat registrasi.");
   }
-}
-
-function getSenderNumber(msg) {
-  const rawId = msg.author || msg.from;
-  if (!rawId) return null;
-  return rawId.split("@")[0];
 }
 
 module.exports = registerHandler;
