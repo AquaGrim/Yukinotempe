@@ -1,33 +1,40 @@
 const { loadUsers } = require("./utils");
 
 async function profileHandler(msg) {
-  const contact = await msg.getContact();
-  const sender = contact.number;
-  const users = loadUsers();
-  const user = users[sender];
-  if (!user || !user.registered) {
-    return msg.reply("❌ Kamu belum terdaftar. Gunakan *!regist Nama | Umur*");
+  try {
+    // Extract nomor dari msg.from (format: 62812345678@c.us)
+    const sender = msg.from.split("@")[0];
+    const users = loadUsers();
+    const user = users[sender];
+    if (!user || !user.registered) {
+      return msg.reply(
+        "❌ Kamu belum terdaftar. Gunakan *!regist Nama | Umur*"
+      );
+    }
+    let inventoryText = "📦 Kosong";
+    if (
+      user.inventory &&
+      typeof user.inventory === "object" &&
+      Object.keys(user.inventory).length > 0
+    ) {
+      inventoryText = Object.entries(user.inventory)
+        .map(([item, count]) => `• ${item} x${count}`)
+        .join("\n");
+    }
+    const profileText = `🎖️ *Profil ${
+      user.name || "Tanpa Nama"
+    }*\n\n👤 Nama     : ${user.name || "-"}\n🎂 Umur     : ${
+      user.age || "-"
+    }\n📈 Level    : ${user.level}\n🧪 EXP      : ${user.exp} / ${
+      (user.level + 1) * 50
+    }\n💰 Gold     : ${user.money}\n⚡ Stamina  : ${
+      user.stamina
+    }\n\n🎒 *Inventori:*\n${inventoryText}`;
+    await msg.reply(profileText);
+  } catch (error) {
+    console.error("[PROFILE] Error:", error.message);
+    return msg.reply("❌ Terjadi kesalahan saat mengakses profil.");
   }
-  let inventoryText = "📦 Kosong";
-  if (
-    user.inventory &&
-    typeof user.inventory === "object" &&
-    Object.keys(user.inventory).length > 0
-  ) {
-    inventoryText = Object.entries(user.inventory)
-      .map(([item, count]) => `• ${item} x${count}`)
-      .join("\n");
-  }
-  const profileText = `🎖️ *Profil ${
-    user.name || "Tanpa Nama"
-  }*\n\n👤 Nama     : ${user.name || "-"}\n🎂 Umur     : ${
-    user.age || "-"
-  }\n📈 Level    : ${user.level}\n🧪 EXP      : ${user.exp} / ${
-    (user.level + 1) * 50
-  }\n💰 Gold     : ${user.money}\n⚡ Stamina  : ${
-    user.stamina
-  }\n\n🎒 *Inventori:*\n${inventoryText}`;
-  await msg.reply(profileText);
 }
 
 module.exports = profileHandler;
