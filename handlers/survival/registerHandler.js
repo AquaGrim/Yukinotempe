@@ -3,9 +3,14 @@ const { extractUserNumber } = require("./userExtractor");
 
 async function registerHandler(msg) {
   try {
+    console.log("[REGISTER] Command triggered");
     const senderNumber = extractUserNumber(msg);
+    console.log("[REGISTER] Extracted sender number:", senderNumber);
 
     if (!senderNumber) {
+      console.log(
+        "[REGISTER] ✗ Tidak bisa extract nomor, request pesan pribadi"
+      );
       return msg.reply(
         "❌ Tidak bisa mendapatkan nomor user di grup. Silakan kirim pesan pribadi ke bot terlebih dahulu, baru lakukan registrasi!"
       );
@@ -13,6 +18,13 @@ async function registerHandler(msg) {
 
     const users = loadUsers();
     const text = msg.body;
+    console.log(
+      "[REGISTER] User number:",
+      senderNumber,
+      "Already registered:",
+      !!users[senderNumber]?.registered
+    );
+
     if (users[senderNumber]?.registered)
       return msg.reply("   ^=^s^{ Kamu sudah terdaftar.");
     const match = text.match(/^!regist\s+(.+)\s*\|\s*(\d{1,2})$/i);
@@ -24,6 +36,16 @@ async function registerHandler(msg) {
       return msg.reply("   ^}^w Nama harus 3-20 karakter.");
     if (age < 10 || age > 99)
       return msg.reply("   ^}^w Umur harus antara 10-99 tahun.");
+
+    console.log(
+      "[REGISTER] Creating user:",
+      senderNumber,
+      "Name:",
+      name,
+      "Age:",
+      age
+    );
+
     users[senderNumber] = {
       registered: true,
       name,
@@ -39,11 +61,17 @@ async function registerHandler(msg) {
       misi: { petualang: 0, lawan: 0 },
     };
     saveUsers(users);
+    console.log(
+      "[REGISTER] ✓ User registered successfully with number:",
+      senderNumber
+    );
+
     return msg.reply(
       `   ^|^e Registrasi berhasil!\nNama: *${name}*\nUmur: *${age} tahun*`
     );
   } catch (error) {
     console.error("[REGISTER] Error:", error.message);
+    console.error("[REGISTER] Stack:", error.stack);
     return msg.reply("❌ Terjadi kesalahan saat registrasi.");
   }
 }
