@@ -1,8 +1,8 @@
 /**
  * Extract nomor user yang benar dari msg object
- * Menangani pesan pribadi dan grup dengan benar
+ * Menangani pesan pribadi, grup, dan device ID
  * @param {Object} msg - WhatsApp message object
- * @returns {string} Nomor user (misal: 62812345678)
+ * @returns {string} Nomor user (misal: 62812345678) atau device ID (misal: 140067641258044@lid)
  */
 function extractUserNumber(msg) {
   const fromId = msg.from;
@@ -27,43 +27,32 @@ function extractUserNumber(msg) {
   if (fromId.endsWith("@g.us")) {
     console.log("[EXTRACT_USER] Pesan dari GRUP");
 
-    // Cek msg._data.to terlebih dahulu (PRIORITY 1 - paling reliable untuk grup)
-    if (msg._data?.to) {
-      console.log("[EXTRACT_USER] Cek msg._data.to:", msg._data.to);
+    // Cek msg._data.to terlebih dahulu (untuk private msg yang dikirim dari bot)
+    if (msg._data?.to && msg._data.to.includes("@c.us")) {
       const toMatch = msg._data.to.match(/^(\d+)@/);
       if (toMatch) {
         const toNumber = toMatch[1];
-        // Validasi: nomor telpon panjang (10+ digit) dan bukan group ID (tidak mulai 120)
+        // Validasi: nomor telpon panjang (10+ digit) dan bukan group ID
         if (/^\d{10,}$/.test(toNumber) && !toNumber.startsWith("120")) {
           console.log("[EXTRACT_USER] ✓ Nomor valid dari _data.to:", toNumber);
           return toNumber;
-        } else {
-          console.log(
-            "[EXTRACT_USER] ✗ _data.to bukan nomor telpon valid:",
-            toNumber
-          );
         }
       }
     }
 
-    // Fallback: Cek msg.author (PRIORITY 2)
+    // Fallback: Cek msg.author sebagai device ID
     if (msg.author) {
-      console.log("[EXTRACT_USER] Fallback: msg.author tersedia:", msg.author);
-      const authorNumber = msg.author.split("@")[0];
-
-      // Validasi: nomor telpon Indonesia biasanya 62... atau lebih dari 10 digit
-      if (/^\d{10,}$/.test(authorNumber) && !authorNumber.startsWith("120")) {
-        console.log("[EXTRACT_USER] ✓ Nomor valid dari author:", authorNumber);
-        return authorNumber;
-      } else {
-        console.log(
-          "[EXTRACT_USER] ✗ Author bukan nomor telpon:",
-          authorNumber
-        );
-      }
+      console.log(
+        "[EXTRACT_USER] Using device ID from msg.author:",
+        msg.author
+      );
+      // Return device ID as-is (format: 140067641258044@lid)
+      return msg.author;
     }
 
-    console.log("[EXTRACT_USER] ✗ Tidak bisa extract nomor dari grup");
+    console.log(
+      "[EXTRACT_USER] ✗ Tidak bisa extract nomor atau device ID dari grup"
+    );
     return null;
   }
 
