@@ -21,8 +21,13 @@ async function shopHandler(msg) {
 
 async function buyHandler(msg) {
   try {
-    // Extract nomor dari msg.from (format: 62812345678@c.us)
-    const sender = msg.from.split("@")[0];
+    // Extract nomor user (dari pesan pribadi atau di grup)
+    let sender;
+    if (!msg.isGroup) {
+      sender = msg.from.split("@")[0];
+    } else {
+      sender = msg.author ? msg.author.split("@")[0] : msg.from.split("@")[0];
+    }
     const users = loadUsers();
     const user = users[sender];
 

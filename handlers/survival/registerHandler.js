@@ -2,8 +2,19 @@ const { loadUsers, saveUsers } = require("./utils");
 
 async function registerHandler(msg) {
   try {
-    // Extract nomor dari msg.from (format: 62812345678@c.us)
-    const senderNumber = msg.from.split("@")[0];
+    // Extract nomor user (dari pesan pribadi atau quoted message di grup)
+    let senderNumber;
+
+    // Jika di pesan pribadi, gunakan msg.from
+    if (!msg.isGroup) {
+      senderNumber = msg.from.split("@")[0];
+    } else {
+      // Jika di grup, gunakan author/sender yang quoted
+      senderNumber = msg.author
+        ? msg.author.split("@")[0]
+        : msg.from.split("@")[0];
+    }
+
     const users = loadUsers();
     const text = msg.body;
     if (users[senderNumber]?.registered)

@@ -2,8 +2,15 @@ const { loadUsers, saveUsers, addExp, addItem } = require("./utils");
 
 async function adventureHandler(msg) {
   try {
-    // Extract nomor dari msg.from (format: 62812345678@c.us)
-    const senderNumber = msg.from.split("@")[0];
+    // Extract nomor user (dari pesan pribadi atau di grup)
+    let senderNumber;
+    if (!msg.isGroup) {
+      senderNumber = msg.from.split("@")[0];
+    } else {
+      senderNumber = msg.author
+        ? msg.author.split("@")[0]
+        : msg.from.split("@")[0];
+    }
     const users = loadUsers();
     const user = users[senderNumber];
     if (!user || !user.registered) {

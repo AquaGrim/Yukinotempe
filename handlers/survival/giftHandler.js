@@ -4,8 +4,13 @@ const adminList = ["6281292744550"]; // Ganti dengan nomor kamu
 
 async function giftHandler(msg) {
   try {
-    // Extract nomor dari msg.from (format: 62812345678@c.us)
-    const sender = msg.from.split("@")[0];
+    // Extract nomor admin/sender (dari pesan pribadi atau di grup)
+    let sender;
+    if (!msg.isGroup) {
+      sender = msg.from.split("@")[0];
+    } else {
+      sender = msg.author ? msg.author.split("@")[0] : msg.from.split("@")[0];
+    }
     if (!adminList.includes(sender)) {
       return msg.reply(
         "   ^}^l Kamu tidak diizinkan menggunakan perintah ini."
